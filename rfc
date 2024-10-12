@@ -14,6 +14,17 @@
 # ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 # OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
+download() {
+	if command -v ftp 2>/dev/null; then
+		ftp $@
+	elif command -v curl 2>/dev/null; then
+		curl $@
+	else
+		echo "Failed to find fetch program" 1>&2
+		exit 1
+	fi
+}
+
 mkdir_maybe() {
 	if [ -d "$1" ]; then
 		return 0
@@ -62,12 +73,12 @@ if [ -n "$RFCCACHE" ]; then
 	mkdir_maybe "$RFCCACHE/$dir" || exit 1
 
 	if [ ! -f "${RFCCACHE}/${dir}/$1" ]; then
-		ftp -o - "https://www.ietf.org/rfc/${fmt}$1.txt" 2>/dev/null \
+		download -o - "https://www.ietf.org/rfc/${fmt}$1.txt" 2>/dev/null \
 			| tr -d "\\014" > "${RFCCACHE}/${dir}/$1" || exit 1
 	fi
 
 	${PAGER} "${RFCCACHE}/${dir}/$1" || exit 1
 else
-	ftp -o - "https://www.ietf.org/rfc/${fmt}$1.txt" 2>/dev/null \
+	download -o - "https://www.ietf.org/rfc/${fmt}$1.txt" 2>/dev/null \
 		| tr -d "\\014" | ${PAGER} || exit 1
 fi
