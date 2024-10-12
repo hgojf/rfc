@@ -27,6 +27,8 @@ usage() {
 	exit 2
 }
 
+PAGER="${PAGER:=less}"
+
 std=0
 while getopts s name
 do
@@ -64,8 +66,8 @@ if [ -n "$RFCCACHE" ]; then
 			| tr -d "\\014" > "${RFCCACHE}/${dir}/$1" || exit 1
 	fi
 
-	less "${RFCCACHE}/${dir}/$1" || exit 1
+	${PAGER} "${RFCCACHE}/${dir}/$1" || exit 1
 else
 	ftp -o - "https://www.ietf.org/rfc/${fmt}$1.txt" 2>/dev/null \
-		| tr -d "\\014" | less || exit 1
+		| tr -d "\\014" | ${PAGER} || exit 1
 fi
