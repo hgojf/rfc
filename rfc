@@ -15,9 +15,9 @@
 # OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 download() {
-	if command -v ftp 2>/dev/null; then
+	if command -v ftp >/dev/null; then
 		ftp $@
-	elif command -v curl 2>/dev/null; then
+	elif command -v curl >/dev/null; then
 		curl $@
 	else
 		echo "Failed to find fetch program" 1>&2
