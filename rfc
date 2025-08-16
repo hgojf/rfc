@@ -14,38 +14,19 @@
 # ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 # OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
-download() {
-	if command -v ftp >/dev/null; then
-		ftp $@
-	elif command -v curl >/dev/null; then
-		curl $@
-	else
-		echo "Failed to find fetch program" 1>&2
-		exit 1
-	fi
-}
-
-mkdir_maybe() {
-	if [ -d "$1" ]; then
-		return 0
-	fi
-
-	mkdir -p "$1"
-}
-
 usage() {
-	echo "usage: rfc [-s] number" 1>&2
+	echo "usage: rfc [-s] document" 1>&2
 	exit 2
 }
 
-PAGER="${PAGER:=less}"
+# Needed for ftp(1) invocations
+set -o pipefail
 
 std=0
-while getopts s name
-do
+while getopts s name; do
 	case $name in
-	s)	std=1 ;;
-	?)	usage ;;
+	s) std=1 ;;
+	?) usage ;;
 	esac
 done
 
@@ -55,31 +36,38 @@ if [ $# -ne 1 ]; then
 	usage
 fi
 
+document="$1"
+
 if [ $std -eq 1 ]; then
-	fmt="std/std"
+	url="https://www.ietf.org/rfc/std/std$document.txt"
 else
-	fmt="rfc"
+	url="https://www.ietf.org/rfc/rfc$document.txt"
 fi
 
 if [ -n "$RFCCACHE" ]; then
-	mkdir_maybe "$RFCCACHE" || exit 1
+	[ -d "$RFCCACHE" ] || mkdir "$RFCCACHE" || exit 1
 
 	if [ $std -eq 1 ]; then
-		dir="std"
+		dir="$RFCCACHE/std"
 	else
-		dir="rfc"
+		dir="$RFCCACHE/rfc"
 	fi
 
-	mkdir_maybe "$RFCCACHE/$dir" || exit 1
+	[ -d "$dir" ] || mkdir "$dir" || exit 1
 
-	if [ ! -f "${RFCCACHE}/${dir}/$1" ]; then
-		download -o - "https://www.ietf.org/rfc/${fmt}$1.txt" 2>/dev/null \
-			| tr -d "\\014" > "${RFCCACHE}/${dir}/$1.tmp" || exit 1
-		mv "${RFCCACHE}/${dir}/$1.tmp" "${RFCCACHE}/${dir}/$1" || exit 1
+	file="$dir/$document"
+	if [ ! -f "$file" ]; then
+		tmp="$(mktemp)" || exit 1
+		trap 'rm "$tmp"' EXIT
+		ftp -V -o - "$url" | tr -d '\014' > "$tmp" || exit 1
+		mv "$tmp" "$file" || exit 1
+		trap "" EXIT
 	fi
 
-	${PAGER} "${RFCCACHE}/${dir}/$1" || exit 1
+	less "$file" || exit 1
 else
-	download -o - "https://www.ietf.org/rfc/${fmt}$1.txt" 2>/dev/null \
-		| tr -d "\\014" | ${PAGER} || exit 1
+	file="$(mktemp)" || exit 1
+	trap 'rm "$file"' EXIT
+	ftp -V -o - "$url" | tr -d '\014' > "$file" || exit 1
+	less "$file" || exit 1
 fi
