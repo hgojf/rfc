@@ -27,6 +27,21 @@ maketags() {
 	fi
 }
 
+pager() {
+	tags="$1"
+	filename="$2"
+
+	pager="${PAGER:=less}"
+	if [ "$pager" != "less" ] && [ "$pager" != "more" ]; then
+		# Pagers other than less(1) and more(1) dont necessarilly
+		# support tags via -T, so dont pass the option.
+		"${pager}" "${filename}"
+	else
+		"${pager}" -T "${tags}" "${filename}"
+	fi
+
+}
+
 usage() {
 	echo "usage: rfc [-s] document" 1>&2
 	exit 2
@@ -90,7 +105,7 @@ if [ -n "$RFCCACHE" ]; then
 		trap "" EXIT
 	fi
 
-	less -T "$tags" "$file" || exit 1
+	pager "$tags" "$file" || exit 1
 else
 	file="$(mktemp)" || exit 1
 	trap 'rm "$file"' EXIT
@@ -100,5 +115,5 @@ else
 	trap 'rm "$file" "$tags"' EXIT
 	maketags "$file" > "$tags"
 
-	less -T "$tags" "$file" || exit 1
+	pager "$tags" "$file" || exit 1
 fi
