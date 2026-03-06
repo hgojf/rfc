@@ -86,11 +86,8 @@ main(int argc, char *argv[])
 			if (error != 0)
 				regdie(error, &section, 1, "regexec");
 
-			/*
-			 * This substitution extends to the end of the string
-			 * so we dont need to copy it.
-			 */
-			section_name = &line[match[2].rm_so];
+			if ((section_name = strdup(&line[match[2].rm_so])) == NULL)
+				err(1, NULL);
 
 			/*
 			 * Tag names can't have whitespace in them, so use
@@ -103,6 +100,8 @@ main(int argc, char *argv[])
 			if (printf("%s %s /^%s$/\n", section_name, filename,
 				   line) < 0)
 				err(1, "printf");
+
+			free(section_name);
 		}
 	}
 	if (ferror(fp))
