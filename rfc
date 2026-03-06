@@ -14,6 +14,19 @@
 # ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 # OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
+maketags() {
+	filename="$1"
+
+	# PREFIX is filled in by the Makefile, unless we are running
+	# ./rfc in the source directory, in which case we can use
+	# the local rfctags binary.
+	if [ -z "${PREFIX}" ]; then
+		./rfctags "$1" || exit 1
+	else
+		${PREFIX}/libexec/rfctags "$1" || exit 1
+	fi
+}
+
 usage() {
 	echo "usage: rfc [-s] document" 1>&2
 	exit 2
@@ -56,18 +69,36 @@ if [ -n "$RFCCACHE" ]; then
 	[ -d "$dir" ] || mkdir "$dir" || exit 1
 
 	file="$dir/$document"
+	tags="$dir/$document.tags"
 	if [ ! -f "$file" ]; then
 		tmp="$(mktemp)" || exit 1
 		trap 'rm "$tmp"' EXIT
 		ftp -V -o - "$url" | tr -d '\014' > "$tmp" || exit 1
 		mv "$tmp" "$file" || exit 1
 		trap "" EXIT
+
 	fi
 
-	less "$file" || exit 1
+	# Invocations from before ctags support was added would not
+	# have created this file, so we have to do it even if we already
+	# downloaded the rfc.
+	if [ ! -f "$tags" ]; then
+		tmp="$(mktemp)" || exit 1
+		trap 'rm "$tmp"' EXIT
+		maketags "$file" > "$tmp"
+		mv "$tmp" "$tags"
+		trap "" EXIT
+	fi
+
+	less -T "$tags" "$file" || exit 1
 else
 	file="$(mktemp)" || exit 1
 	trap 'rm "$file"' EXIT
 	ftp -V -o - "$url" | tr -d '\014' > "$file" || exit 1
-	less "$file" || exit 1
+
+	tags="$(mktemp)" || exit 1
+	trap 'rm "$file" "$tags"' EXIT
+	maketags "$file" > "$tags"
+
+	less -T "$tags" "$file" || exit 1
 fi
