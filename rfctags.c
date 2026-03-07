@@ -56,13 +56,17 @@ main(int argc, char *argv[])
 	argc -= optind;
 	argv += optind;
 
-	if (argc != 1)
-		usage();
-
-	filename = argv[0];
-
-	if ((fp = fopen(filename, "r")) == NULL)
-		err(1, "%s", filename);
+	if (argc == 0) {
+		filename = "stdin";
+		fp = stdin;
+	}
+	else {
+		if (argc != 0)
+			usage();
+		filename = argv[0];
+		if ((fp = fopen(filename, "r")) == NULL)
+			err(1, "%s", filename);
+	}
 
 	if (pledge("stdio", NULL) == -1)
 		err(1, "pledge");
@@ -129,7 +133,8 @@ main(int argc, char *argv[])
 	if (ferror(fp))
 		err(1, "getline");
 
-	fclose(fp);
+	if (fp != stdin)
+		fclose(fp);
 	free(line);
 	regfree(&abnf);
 	regfree(&section);
@@ -172,6 +177,6 @@ regdie(int error, regex_t *reg, int ex, const char *fmt, ...)
 static void
 usage(void)
 {
-	fprintf(stderr, "usage: rfctags file\n");
+	fprintf(stderr, "usage: rfctags [file]\n");
 	exit(2);
 }
