@@ -26,6 +26,7 @@
 #include <unistd.h>
 
 static void regdie(int, regex_t *, int, const char *, ...);
+static char *regstrdup(const char *, regmatch_t *);
 static __dead void usage(void);
 
 /*
@@ -74,14 +75,14 @@ main(int argc, char *argv[])
 	if ((error = regcomp(&abnf, "^[ \t]*([a-zA-Z][a-zA-Z0-9-]*)[ \t]+=[ \t]+.*$",
 	    REG_EXTENDED)) != 0)
 		regdie(error, &abnf, 1, "regcomp");
-	if ((error = regcomp(&section, "^[ \t]*([0-9]\\.)+[ \t]+(.*)$", REG_EXTENDED)) != 0)
+	if ((error = regcomp(&section, "^[ \t]*([0-9](\\.[0-9])*)\\.[ \t]+(.*)$", REG_EXTENDED)) != 0)
 		regdie(error, &section, 1, "regcomp");
 
 	line = NULL;
 	lineno = 0;
 	linesz = 0;
 	while ((n = getline(&line, &linesz, fp)) != -1) {
-		regmatch_t match[3];
+		regmatch_t match[4];
 
 		if (n != 0 && line[n - 1] == '\n')
 			line[n - 1] = '\0';
@@ -92,8 +93,7 @@ main(int argc, char *argv[])
 			if (error != 0)
 				regdie(error, &abnf, 1, "regexec");
 
-			if ((name = strndup(&line[match[1].rm_so],
-					    match[1].rm_eo - match[1].rm_so)) == NULL)
+			if ((name = regstrdup(line, &match[1])) == NULL)
 				err(1, NULL);
 
 			if (printf("%s %s %zu\n", name, filename,
@@ -103,12 +103,12 @@ main(int argc, char *argv[])
 			free(name);
 		}
 		else if ((error = regexec(&section, line, nitems(match), match, 0)) != REG_NOMATCH) {
-			char *section_name, *sp;
+			char *section_name, *section_number, *sp;
 
 			if (error != 0)
 				regdie(error, &section, 1, "regexec");
 
-			if ((section_name = strdup(&line[match[2].rm_so])) == NULL)
+			if ((section_name = regstrdup(line, &match[3])) == NULL)
 				err(1, NULL);
 
 			/*
@@ -124,6 +124,13 @@ main(int argc, char *argv[])
 				err(1, "printf");
 
 			free(section_name);
+
+			if ((section_number = regstrdup(line, &match[1])) == NULL)
+				err(1, NULL);
+			if (printf("%s %s %zu\n", section_number, filename,
+				   lineno + 1) < 0)
+				err(1, "printf");
+			free(section_number);
 		}
 
 		if (lineno == SIZE_MAX - 2)
@@ -172,6 +179,15 @@ regdie(int error, regex_t *reg, int ex, const char *fmt, ...)
 
 	fprintf(stderr, ": %s\n", bufp);
 	exit(ex);
+}
+
+/*
+ * Duplicate the portion of s described by mp.
+ */
+static char *
+regstrdup(const char *s, regmatch_t *mp)
+{
+	return strndup(&s[mp->rm_so], mp->rm_eo - mp->rm_so);
 }
 
 static void
