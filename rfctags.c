@@ -75,7 +75,7 @@ main(int argc, char *argv[])
 	if ((error = regcomp(&abnf, "^[ \t]*([a-zA-Z][a-zA-Z0-9-]*)[ \t]+=[ \t]+.*$",
 	    REG_EXTENDED)) != 0)
 		regdie(error, &abnf, 1, "regcomp");
-	if ((error = regcomp(&section, "^[ \t]*([0-9](\\.[0-9])*)\\.[ \t]+(.*)$", REG_EXTENDED)) != 0)
+	if ((error = regcomp(&section, "^[ \t]*([0-9]+(\\.[0-9]+)*)\\.[ \t]+(.*)$", REG_EXTENDED)) != 0)
 		regdie(error, &section, 1, "regcomp");
 
 	line = NULL;
