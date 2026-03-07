@@ -20,6 +20,7 @@
 #include <regex.h>
 #include <stdarg.h>
 #include <stdio.h>
+#include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
@@ -39,7 +40,7 @@ main(int argc, char *argv[])
 {
 	FILE *fp;
 	regex_t abnf, section;
-	size_t linesz;
+	size_t lineno, linesz;
 	ssize_t n;
 	int ch, error;
 	char *line;
@@ -73,6 +74,7 @@ main(int argc, char *argv[])
 		regdie(error, &section, 1, "regcomp");
 
 	line = NULL;
+	lineno = 0;
 	linesz = 0;
 	while ((n = getline(&line, &linesz, fp)) != -1) {
 		regmatch_t match[3];
@@ -90,8 +92,8 @@ main(int argc, char *argv[])
 					    match[1].rm_eo - match[1].rm_so)) == NULL)
 				err(1, NULL);
 
-			if (printf("%s %s /^%s$/\n", name, filename,
-				   line) < 0)
+			if (printf("%s %s %zu\n", name, filename,
+				   lineno + 1) < 0)
 				err(1, "printf");
 
 			free(name);
@@ -113,12 +115,16 @@ main(int argc, char *argv[])
 				if (*sp == ' ' || *sp == '\t')
 					*sp = '_';
 
-			if (printf("%s %s /^%s$/\n", section_name, filename,
-				   line) < 0)
+			if (printf("%s %s %zu\n", section_name, filename,
+				   lineno + 1) < 0)
 				err(1, "printf");
 
 			free(section_name);
 		}
+
+		if (lineno == SIZE_MAX - 2)
+			errx(1, "file too long");
+		lineno++;
 	}
 	if (ferror(fp))
 		err(1, "getline");
