@@ -61,7 +61,7 @@ main(int argc, char *argv[])
 		fp = stdin;
 	}
 	else {
-		if (argc != 0)
+		if (argc != 1)
 			usage();
 		filename = argv[0];
 		if ((fp = fopen(filename, "r")) == NULL)
