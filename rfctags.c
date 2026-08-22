@@ -161,9 +161,6 @@ regdie(int error, regex_t *reg, int ex, const char *fmt, ...)
 	if (len > sizeof(buf)) {
 		char *b;
 
-		/*
-		 * This gets leaked but we are dying anyways.
-		 */
 		if ((b = malloc(len)) != NULL) {
 			regerror(error, reg, b, len);
 			bufp = b;
