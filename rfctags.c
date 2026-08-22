@@ -98,7 +98,7 @@ main(int argc, char *argv[])
 
 			if (printf("%s %s %zu\n", name, filename,
 				   lineno + 1) < 0)
-				err(1, "printf");
+				err(1, "stdout");
 
 			free(name);
 		}
@@ -121,7 +121,7 @@ main(int argc, char *argv[])
 
 			if (printf("%s %s %zu\n", section_name, filename,
 				   lineno + 1) < 0)
-				err(1, "printf");
+				err(1, "stdout");
 
 			free(section_name);
 
@@ -129,7 +129,7 @@ main(int argc, char *argv[])
 				err(1, NULL);
 			if (printf("%s %s %zu\n", section_number, filename,
 				   lineno + 1) < 0)
-				err(1, "printf");
+				err(1, "stdout");
 			free(section_number);
 		}
 
@@ -139,6 +139,9 @@ main(int argc, char *argv[])
 	}
 	if (ferror(fp))
 		err(1, "getline");
+
+	if (fflush(stdout) == EOF)
+		err(1, "stdout");
 
 	if (fp != stdin)
 		fclose(fp);
