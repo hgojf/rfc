@@ -100,8 +100,8 @@ if [ -n "$RFCCACHE" ]; then
 	if [ ! -f "$tags" ]; then
 		tmp="$(mktemp)" || exit 1
 		trap 'rm "$tmp"' EXIT
-		maketags "$file" > "$tmp"
-		mv "$tmp" "$tags"
+		maketags "$file" > "$tmp" || exit 1
+		mv "$tmp" "$tags" || exit 1
 		trap "" EXIT
 	fi
 
@@ -113,7 +113,7 @@ else
 
 	tags="$(mktemp)" || exit 1
 	trap 'rm "$file" "$tags"' EXIT
-	maketags "$file" > "$tags"
+	maketags "$file" > "$tags" || exit 1
 
 	pager "$tags" "$file" || exit 1
 fi
